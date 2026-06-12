@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
@@ -16,10 +18,13 @@ public class TranslationManager
     private readonly TranslationCache _cache;
     private readonly FontHelper _font;
 
+    private readonly ConcurrentDictionary<string, Task> _loadingNovels = new();
+
     public Dictionary<string, string> Names { get; private set; } = [];
     public Dictionary<string, string> Titles { get; private set; } = [];
     public Dictionary<string, string> Descriptions { get; private set; } = [];
-    public Dictionary<string, Dictionary<string, string>> Novels { get; private set; } = [];
+    public ConcurrentDictionary<string, Dictionary<string, string>> Novels { get; private set; } =
+        new();
     public FontHelper Font => _font;
 
     public TranslationManager(TranslationCache cache, FontHelper font)
@@ -93,16 +98,38 @@ public class TranslationManager
         if (Novels.ContainsKey(novelId))
             return;
 
-        var translations = await _cache.LoadAsync(TranslationPaths.Novels, novelId.ToString());
-        if (translations != null)
+        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var existingTask = _loadingNovels.GetOrAdd(novelId, tcs.Task);
+
+        if (existingTask != tcs.Task)
         {
-            Novels[novelId] = translations;
-            Logger.Info($"Scenario translation loaded. Total: {translations.Count}");
+            await existingTask;
+            return;
         }
-        else
+
+        try
         {
-            Logger.Warn($"Translations loaded failed: {novelId}");
-            Toast.Warn("加载失败", $"剧本ID: {novelId}");
+            var translations = await _cache.LoadAsync(TranslationPaths.Novels, novelId);
+            if (translations != null)
+            {
+                Novels[novelId] = translations;
+                Logger.Info($"Scenario translation loaded. Total: {translations.Count}");
+            }
+            else
+            {
+                Logger.Warn($"Translations loaded failed: {novelId}");
+                Toast.Warn("加载失败", $"剧本ID: {novelId}");
+            }
+            tcs.SetResult();
+        }
+        catch (Exception ex)
+        {
+            tcs.SetException(ex);
+            throw;
+        }
+        finally
+        {
+            _loadingNovels.TryRemove(novelId, out _);
         }
     }
 }

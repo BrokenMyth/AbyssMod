@@ -70,6 +70,9 @@ public class Plugin : BasePlugin
         {
             Timeout = TimeSpan.FromSeconds(HttpTimeoutSeconds),
         };
+        httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
+            $"{MyPluginInfo.PLUGIN_GUID}/{MyPluginInfo.PLUGIN_VERSION}"
+        );
 
         var cache = new TranslationCache(
             AbyssMod.Config.TranslationCDN.Value,

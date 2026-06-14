@@ -1,6 +1,7 @@
 using System.Linq;
 using Absf;
 using HarmonyLib;
+using Il2CppSystem.Threading;
 using Project.Notice;
 using Project.Novel;
 
@@ -69,6 +70,16 @@ public static class EnhancePatch
             {
                 _allowStopVoiceCount--;
             }
+        }
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(Project.Title.TopView), nameof(Project.Title.TopView.PlayMovie))]
+    public static void DisableTitleMovie(Project.Title.TopView __instance, CancellationToken ct)
+    {
+        if (!Config.TitleMovie.Value)
+        {
+            __instance.MovieSkip(ct);
         }
     }
 }

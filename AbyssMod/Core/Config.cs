@@ -21,6 +21,7 @@ namespace AbyssMod
         public static ConfigEntry<bool> DynamicMosaic;
         public static ConfigEntry<bool> SoundCaution;
         public static ConfigEntry<bool> VoiceInterruption;
+        public static ConfigEntry<bool> TitleMovie;
         #endregion
 
         #region Translation
@@ -81,6 +82,12 @@ namespace AbyssMod
                 "VoiceInterruption",
                 false,
                 "剧情中播放下一段无声文本时是否中断当前角色语音"
+            );
+            TitleMovie = Plugin.ConfigFile.Bind(
+                "General",
+                "TitleMovie",
+                false,
+                "是否开启进入游戏时的标题动画"
             );
             #endregion
 

@@ -2,7 +2,10 @@ using HarmonyLib;
 using Il2CppSystem;
 using Il2CppSystem.Collections.Generic;
 using Il2CppSystem.Threading;
+using Project.Library;
+using Project.MainStory;
 using Project.Novel;
+using Project.Outgame;
 
 namespace AbyssMod.Patches;
 
@@ -186,6 +189,46 @@ public static class TranslationPatch
             string message = data.Message;
             if (!string.IsNullOrEmpty(message) && translation.TryGetValue(message, out string text))
                 data.Message = text;
+        }
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(
+        typeof(LibraryNovelPlayPopupController),
+        nameof(LibraryNovelPlayPopupController.InitializePopup)
+    )]
+    public static void SetLibraryPopup(LibraryNovelPlayPopupController __instance, TextPopup popup)
+    {
+        if (Config.Translation.Value)
+        {
+            string title = __instance._model.Title;
+            if (
+                !string.IsNullOrEmpty(title)
+                && Plugin.Trans.Titles.TryGetValue(title, out string _title)
+            )
+                popup._titleText.text = _title;
+
+            string description = __instance._model.Description;
+            if (
+                !string.IsNullOrEmpty(description)
+                && Plugin.Trans.Descriptions.TryGetValue(description, out string _description)
+            )
+                popup._contentText.text = description;
+        }
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(StoryQuestDetailPopup), nameof(StoryQuestDetailPopup.Setup))]
+    public static void SetStoryQuestDetail(StoryQuestDetailPopup __instance)
+    {
+        if (Config.Translation.Value)
+        {
+            string description = __instance._storyDescription.text;
+            if (
+                !string.IsNullOrEmpty(description)
+                && Plugin.Trans.Descriptions.TryGetValue(description, out string text)
+            )
+                __instance._storyDescription.text = text;
         }
     }
 }

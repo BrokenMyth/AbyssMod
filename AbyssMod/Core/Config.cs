@@ -86,7 +86,7 @@ namespace AbyssMod
             TitleMovie = Plugin.ConfigFile.Bind(
                 "General",
                 "TitleMovie",
-                false,
+                true,
                 "是否开启进入游戏时的标题动画"
             );
             #endregion

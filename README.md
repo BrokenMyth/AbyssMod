@@ -77,19 +77,20 @@
 
 ### `[General]`
 
-| 配置项          | 默认值  | 说明               |
-| --------------- | ------- | ------------------ |
-| `DynamicMosaic` | `false` | 是否启用动态马赛克 |
-| `SoundCaution`  | `false` | 是否弹出音量提醒   |
+| 配置项              | 默认值  | 说明               |
+| ------------------- | ------- | ------------------ |
+| `DynamicMosaic`     | `false` | 是否启用动态马赛克 |
+| `SoundCaution`      | `false` | 是否弹出音量提醒   |
+| `VoiceInterruption` | `false` | 是否启用语音中断   |
+| `TitleMovie`        | `true`  | 是否播放标题动画   |
 
 ### `[Translation]`
 
-| 配置项     | 默认值                                                                                      | 说明                                              |
-| ---------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| `Enabled`  | `true`                                                                                      | 是否开启游戏内剧情翻译                            |
-| `CDN`      | `https://raw.githubusercontent.com/anosu/dotabyss-translation/refs/heads/main/translations` | 翻译数据 CDN 地址                                 |
-| `Language` | `zh_Hans`                                                                                   | 翻译语言（支持 `zh_Hans` 简体中文）               |
-| `Language` | `zh_Hant`                                                                                   | 翻译语言（支持 `zh_Hant` 繁體中文）群友"戀曲"提供 |
+| 配置项     | 可选项                                       | 默认值                                                                                      | 说明                                                                    |
+| ---------- | -------------------------------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `Enabled`  | `true`（开启），`false`（关闭）              | `true`                                                                                      | 是否开启游戏内剧情翻译                                                  |
+| `CDN`      | 任意有效的 CDN URL 地址                      | `https://raw.githubusercontent.com/anosu/dotabyss-translation/refs/heads/main/translations` | 翻译数据 CDN 地址                                                       |
+| `Language` | `zh_Hans`（简体中文），`zh_Hant`（繁體中文） | `zh_Hans`                                                                                   | 翻译语言，支持 `zh_Hans` 简体中文与`zh_Hant` 繁體中文（群友"戀曲"提供） |
 
 ### `[Translation.Font]`
 

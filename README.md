@@ -84,11 +84,12 @@
 
 ### `[Translation]`
 
-| 配置项     | 默认值                                                                                      | 说明                                      |
-| ---------- | ------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `Enabled`  | `true`                                                                                      | 是否开启游戏内剧情翻译                    |
-| `CDN`      | `https://raw.githubusercontent.com/anosu/dotabyss-translation/refs/heads/main/translations` | 翻译数据 CDN 地址                         |
-| `Language` | `zh_Hans`                                                                                   | 翻译语言（目前仅支持 `zh_Hans` 简体中文） |
+| 配置项     | 默认值                                                                                      | 说明                                              |
+| ---------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `Enabled`  | `true`                                                                                      | 是否开启游戏内剧情翻译                            |
+| `CDN`      | `https://raw.githubusercontent.com/anosu/dotabyss-translation/refs/heads/main/translations` | 翻译数据 CDN 地址                                 |
+| `Language` | `zh_Hans`                                                                                   | 翻译语言（支持 `zh_Hans` 简体中文）               |
+| `Language` | `zh_Hant`                                                                                   | 翻译语言（支持 `zh_Hant` 繁體中文）群友"戀曲"提供 |
 
 ### `[Translation.Font]`
 
@@ -146,9 +147,16 @@
 
 </details>
 
+<details>
+<summary><b>更改成繁體中文</b></summary>
+<code>BepInEx\config\AbyssMod.cfg</code> 中 <code>Language=zh_Hans</code> 改成 <code>Language=zh_Hant</code>
+
+</details>
+
 ### 社群
 
 - QQ群：[731843659](https://qm.qq.com/q/u80uVbzfNK)
+- 海外詢問： 添加Discord好友 :.lienchu9420（Lienchu恋曲）
 
 ---
 

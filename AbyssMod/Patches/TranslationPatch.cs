@@ -58,16 +58,16 @@ public static class TranslationPatch
             string title = __result.Item1;
             if (
                 !string.IsNullOrEmpty(title)
-                && Plugin.Trans.Titles.TryGetValue(title, out string text)
+                && Plugin.Trans.Titles.TryGetValue(title, out string tTitle)
             )
-                __result.Item1 = text;
+                __result.Item1 = tTitle;
 
             string description = __result.Item2;
             if (
                 !string.IsNullOrEmpty(description)
-                && Plugin.Trans.Descriptions.TryGetValue(description, out string desc)
+                && Plugin.Trans.Descriptions.TryGetValue(description, out string tDescription)
             )
-                __result.Item2 = desc;
+                __result.Item2 = tDescription;
         }
     }
 
@@ -79,9 +79,9 @@ public static class TranslationPatch
         {
             if (
                 !string.IsNullOrEmpty(title)
-                && Plugin.Trans.Titles.TryGetValue(title, out string text)
+                && Plugin.Trans.Titles.TryGetValue(title, out string tTitle)
             )
-                title = text;
+                title = tTitle;
         }
     }
 
@@ -92,9 +92,10 @@ public static class TranslationPatch
         if (TryGetCurrentNovel(out var _))
         {
             if (
-                !string.IsNullOrEmpty(name) && Plugin.Trans.Names.TryGetValue(name, out string text)
+                !string.IsNullOrEmpty(name)
+                && Plugin.Trans.Names.TryGetValue(name, out string tName)
             )
-                name = text;
+                name = tName;
         }
     }
 
@@ -104,8 +105,11 @@ public static class TranslationPatch
     {
         if (TryGetCurrentNovel(out var translation))
         {
-            if (!string.IsNullOrEmpty(message) && translation.TryGetValue(message, out string text))
-                message = text;
+            if (
+                !string.IsNullOrEmpty(message)
+                && translation.TryGetValue(message, out string tMessage)
+            )
+                message = tMessage;
         }
     }
 
@@ -139,15 +143,15 @@ public static class TranslationPatch
             {
                 if (
                     !string.IsNullOrEmpty(name)
-                    && Plugin.Trans.Names.TryGetValue(name, out string _name)
+                    && Plugin.Trans.Names.TryGetValue(name, out string tName)
                 )
-                    name = _name;
+                    name = tName;
 
                 if (
                     !string.IsNullOrEmpty(message)
-                    && translation.TryGetValue(message, out string _message)
+                    && translation.TryGetValue(message, out string tMessage)
                 )
-                    message = _message;
+                    message = tMessage;
             }
 
             list.Add(
@@ -172,8 +176,11 @@ public static class TranslationPatch
         if (TryGetCurrentNovel(out var translation))
         {
             string message = messageData.Message;
-            if (!string.IsNullOrEmpty(message) && translation.TryGetValue(message, out string text))
-                messageData.Message = text;
+            if (
+                !string.IsNullOrEmpty(message)
+                && translation.TryGetValue(message, out string tMessage)
+            )
+                messageData.Message = tMessage;
         }
     }
 
@@ -187,8 +194,11 @@ public static class TranslationPatch
         if (TryGetCurrentNovel(out var translation))
         {
             string message = data.Message;
-            if (!string.IsNullOrEmpty(message) && translation.TryGetValue(message, out string text))
-                data.Message = text;
+            if (
+                !string.IsNullOrEmpty(message)
+                && translation.TryGetValue(message, out string tMessage)
+            )
+                data.Message = tMessage;
         }
     }
 
@@ -204,16 +214,16 @@ public static class TranslationPatch
             string title = __instance._model.Title;
             if (
                 !string.IsNullOrEmpty(title)
-                && Plugin.Trans.Titles.TryGetValue(title, out string _title)
+                && Plugin.Trans.Titles.TryGetValue(title, out string tTitle)
             )
-                popup._titleText.text = _title;
+                popup._titleText.text = tTitle;
 
             string description = __instance._model.Description;
             if (
                 !string.IsNullOrEmpty(description)
-                && Plugin.Trans.Descriptions.TryGetValue(description, out string _description)
+                && Plugin.Trans.Descriptions.TryGetValue(description, out string tDescription)
             )
-                popup._contentText.text = description;
+                popup._contentText.text = tDescription;
         }
     }
 
@@ -226,9 +236,9 @@ public static class TranslationPatch
             string description = __instance._storyDescription.text;
             if (
                 !string.IsNullOrEmpty(description)
-                && Plugin.Trans.Descriptions.TryGetValue(description, out string text)
+                && Plugin.Trans.Descriptions.TryGetValue(description, out string tDescription)
             )
-                __instance._storyDescription.text = text;
+                __instance._storyDescription.text = tDescription;
         }
     }
 }

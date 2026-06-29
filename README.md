@@ -134,13 +134,6 @@
 </details>
 
 <details>
-
-
-> 如果镜像站可用建议优先使用镜像站
-
-</details>
-
-<details>
 <summary><b>更改成繁體中文</b></summary>
 <code>BepInEx\config\AbyssMod.cfg</code> 中 <code>Language=zh_Hans</code> 改成 <code>Language=zh_Hant</code>
 

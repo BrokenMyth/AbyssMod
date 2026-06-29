@@ -51,6 +51,7 @@ public class Plugin : BasePlugin
 
         Initialize();
         PatchManager.Initialize();
+        MasterMapping.Load();
         Trans.Initialize();
 
         Toast.Success(

@@ -13,6 +13,7 @@ namespace AbyssMod
         #region Debug
         public static ConfigEntry<bool> Offline;
         public static ConfigEntry<string> OfflineAPI;
+        public static ConfigEntry<string> DmmSdkAPI;
         public static bool OfflineStartup;
         #endregion
 #endif
@@ -49,17 +50,18 @@ namespace AbyssMod
         {
 #if DEBUG
             #region Debug
-            Offline = Plugin.ConfigFile.Bind(
-                "Debug.Offline",
-                "Enabled",
-                false,
-                "API localization for debug"
-            );
+            Offline = Plugin.ConfigFile.Bind("Debug.Offline", "Enabled", false, "API localization");
             OfflineAPI = Plugin.ConfigFile.Bind(
                 "Debug.Offline",
-                "CDN",
+                "API",
                 "http://localhost:33333/abyss/",
-                "CDN for debug"
+                "API for debugging"
+            );
+            DmmSdkAPI = Plugin.ConfigFile.Bind(
+                "Debug.Offline",
+                "DmmSdkAPI",
+                "http://localhost:33333/dmmsdk",
+                "API for debugging"
             );
             #endregion
 #endif

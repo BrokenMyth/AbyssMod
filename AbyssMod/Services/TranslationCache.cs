@@ -11,7 +11,6 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Utility.Toast;
 
 namespace AbyssMod.Services
 {
@@ -92,6 +91,7 @@ namespace AbyssMod.Services
                 TranslationPaths.Manifest,
                 _language
             );
+            var cachedManifestHash = TryReadManifestHash(path);
 
             try
             {
@@ -106,6 +106,18 @@ namespace AbyssMod.Services
                     }
                     else
                     {
+                        if (
+                            !string.IsNullOrEmpty(cachedManifestHash)
+                            && !string.Equals(
+                                cachedManifestHash,
+                                _manifest.Hash,
+                                StringComparison.Ordinal
+                            )
+                        )
+                        {
+                            Logger.Info("[翻译更新] CDN 有新版本翻译内容");
+                        }
+
                         await File.WriteAllTextAsync(path, json, Utf8);
                         Logger.Info($"Manifest loaded ({_language}). Hash: {_manifest.Hash}");
                         return;
@@ -132,7 +144,6 @@ namespace AbyssMod.Services
                 Logger.Warn(
                     "No local manifest cache available, will fetch without hash verification."
                 );
-                Toast.Warn("翻译服务", "翻译清单不可用，将直接请求翻译");
                 return;
             }
 
@@ -145,7 +156,6 @@ namespace AbyssMod.Services
                     Logger.Info(
                         $"Loaded cached manifest from local ({_language}). Hash: {_manifest.Hash}"
                     );
-                    Toast.Warn("翻译服务", "无法连接远程，使用本地翻译清单");
                 }
                 else
                 {
@@ -176,6 +186,12 @@ namespace AbyssMod.Services
             await semaphore.WaitAsync();
             try
             {
+                if (_manifest != null && expectedHash == null)
+                {
+                    Logger.Info($"Manifest has no entry for {cacheKey}, skipped.");
+                    return new Dictionary<string, string>();
+                }
+
                 // 如果清单中有预期哈希值，先检查本地缓存
                 if (expectedHash != null && File.Exists(cachePath))
                 {
@@ -189,10 +205,12 @@ namespace AbyssMod.Services
                         $"Cache hash mismatch for {cacheKey}, "
                             + $"expected={expectedHash}, local={localHash}"
                     );
+                    Logger.Info($"[翻译更新] CDN 有新版本内容: {cacheKey}");
                 }
 
                 // 从远程获取
                 Logger.Info($"Fetching from remote: {remoteUrl}");
+                Logger.Info($"[下载翻译] 正在下载文件: {cacheKey}");
                 var data = await GetAsync<Dictionary<string, string>>(remoteUrl);
                 if (data != null)
                 {
@@ -208,6 +226,75 @@ namespace AbyssMod.Services
                         Logger.Info($"Loaded stale cache for {cacheKey}");
                     }
                 }
+                return data;
+            }
+            finally
+            {
+                semaphore.Release();
+                CleanupLocksIfNeeded();
+            }
+        }
+
+        /// <summary>
+        /// 加载静态翻译合并包。合并包结构为 { type: { field: { original: translated } } }。
+        /// 远程或本地不可用时返回 null；静态分表不再作为回退路径加载。
+        /// </summary>
+        public async Task<
+            Dictionary<string, Dictionary<string, Dictionary<string, string>>>
+        > LoadStaticBundleAsync()
+        {
+            string type = TranslationPaths.Static;
+            string cacheKey = $"{_language}/{type}";
+            string remoteUrl = TranslationPaths.BuildRemoteUrl(_cdn, type, _language);
+            string cachePath = TranslationPaths.BuildCachePath(_cacheDir, type, _language);
+            string expectedHash = GetManifestHash(type, null);
+
+            var semaphore = _locks.GetOrAdd(cacheKey, _ => new SemaphoreSlim(1, 1));
+            await semaphore.WaitAsync();
+            try
+            {
+                if (_manifest != null && expectedHash == null)
+                {
+                    Logger.Info(
+                        "Manifest has no static bundle entry; "
+                            + "fetching bundle without hash verification."
+                    );
+                }
+
+                if (expectedHash != null && File.Exists(cachePath))
+                {
+                    string localHash = HashBundleFile(cachePath);
+                    if (localHash == expectedHash)
+                    {
+                        Logger.Info($"Static bundle cache hit: {cacheKey}");
+                        return LoadBundleFromFile(cachePath);
+                    }
+                    Logger.Info(
+                        $"Static bundle cache hash mismatch, "
+                            + $"expected={expectedHash}, local={localHash}"
+                    );
+                    Logger.Info($"[翻译更新] CDN 有新版本内容: {cacheKey}");
+                }
+
+                Logger.Info($"Fetching static bundle from remote: {remoteUrl}");
+                Logger.Info($"[下载翻译] 正在下载文件: {cacheKey}");
+                var data = await GetAsync<
+                    Dictionary<string, Dictionary<string, Dictionary<string, string>>>
+                >(remoteUrl);
+                if (data != null)
+                {
+                    SaveBundleToFile(cachePath, data);
+                }
+                else
+                {
+                    Logger.Warn("Static bundle remote fetch failed, trying local fallback.");
+                    if (File.Exists(cachePath))
+                    {
+                        data = LoadBundleFromFile(cachePath);
+                        Logger.Info($"Loaded stale static bundle cache for {cacheKey}");
+                    }
+                }
+
                 return data;
             }
             finally
@@ -249,17 +336,16 @@ namespace AbyssMod.Services
         {
             if (_manifest == null)
                 return null;
-            return type switch
+
+            // novels 是特殊的带 id 嵌套结构，其余类型都走扁平的 Extra 字典
+            if (type == TranslationPaths.Novels && id != null)
             {
-                TranslationPaths.Names => _manifest.Names,
-                TranslationPaths.Titles => _manifest.Titles,
-                TranslationPaths.Descriptions => _manifest.Descriptions,
-                TranslationPaths.Novels when id != null => _manifest.Novels != null
-                && _manifest.Novels.TryGetValue(id, out var hash)
+                return _manifest.Novels != null && _manifest.Novels.TryGetValue(id, out var hash)
                     ? hash
-                    : null,
-                _ => null,
-            };
+                    : null;
+            }
+
+            return _manifest.GetFileHash(type);
         }
 
         /// <summary>
@@ -281,6 +367,22 @@ namespace AbyssMod.Services
             return null;
         }
 
+        private static string TryReadManifestHash(string path)
+        {
+            if (!File.Exists(path))
+                return null;
+
+            try
+            {
+                var json = File.ReadAllText(path, Utf8);
+                return JsonSerializer.Deserialize<Manifest>(json)?.Hash;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         /// <summary>
         /// 从本地文件加载翻译字典。
         /// </summary>
@@ -299,9 +401,47 @@ namespace AbyssMod.Services
         }
 
         /// <summary>
+        /// 从本地文件加载静态翻译合并包。
+        /// </summary>
+        private static Dictionary<
+            string,
+            Dictionary<string, Dictionary<string, string>>
+        > LoadBundleFromFile(string path)
+        {
+            try
+            {
+                var json = File.ReadAllText(path, Utf8);
+                return JsonSerializer.Deserialize<
+                    Dictionary<string, Dictionary<string, Dictionary<string, string>>>
+                >(json);
+            }
+            catch (Exception e)
+            {
+                Logger.Error($"Failed to load static bundle cache {path}: {e.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
         /// 将翻译字典保存到本地文件。
         /// </summary>
         private static void SaveToFile(string path, Dictionary<string, string> data)
+        {
+            var directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory))
+                Directory.CreateDirectory(directory);
+
+            var json = JsonSerializer.Serialize(data, JsonOptions);
+            File.WriteAllText(path, json, Utf8);
+        }
+
+        /// <summary>
+        /// 将静态翻译合并包保存到本地文件。
+        /// </summary>
+        private static void SaveBundleToFile(
+            string path,
+            Dictionary<string, Dictionary<string, Dictionary<string, string>>> data
+        )
         {
             var directory = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(directory))
@@ -322,6 +462,26 @@ namespace AbyssMod.Services
         }
 
         /// <summary>
+        /// 计算静态翻译合并包的规范化哈希值。
+        /// </summary>
+        private static string HashBundleFile(string path)
+        {
+            try
+            {
+                var json = File.ReadAllText(path, Utf8);
+                var bundle = JsonSerializer.Deserialize<
+                    Dictionary<string, Dictionary<string, Dictionary<string, string>>>
+                >(json);
+                return GetBundleHash(bundle);
+            }
+            catch (Exception e)
+            {
+                Logger.Warn($"Static bundle cache is incompatible, refreshing: {e.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
         /// 计算字典的规范化哈希值（与 Python 脚本兼容）。
         /// </summary>
         private static string GetHash(Dictionary<string, string> dict)
@@ -336,6 +496,47 @@ namespace AbyssMod.Services
                 sb.Append('\0');
                 sb.Append(dict[key]);
                 sb.Append('\0');
+            }
+
+            var hash = MD5.HashData(Utf8.GetBytes(sb.ToString()));
+            return Convert.ToHexString(hash).ToLowerInvariant();
+        }
+
+        /// <summary>
+        /// 计算静态翻译合并包的规范化哈希值（与 Python traverse/obj_hash 兼容）。
+        /// </summary>
+        private static string GetBundleHash(
+            Dictionary<string, Dictionary<string, Dictionary<string, string>>> bundle
+        )
+        {
+            if (bundle == null)
+                return null;
+
+            var sb = new StringBuilder();
+            foreach (var type in bundle.Keys.OrderBy(k => k, StringComparer.Ordinal))
+            {
+                var fields = bundle[type];
+                if (fields == null)
+                    continue;
+
+                foreach (var field in fields.Keys.OrderBy(k => k, StringComparer.Ordinal))
+                {
+                    var dict = fields[field];
+                    if (dict == null)
+                        continue;
+
+                    foreach (var key in dict.Keys.OrderBy(k => k, StringComparer.Ordinal))
+                    {
+                        sb.Append(type);
+                        sb.Append('\x01');
+                        sb.Append(field);
+                        sb.Append('\x01');
+                        sb.Append(key);
+                        sb.Append('\0');
+                        sb.Append(dict[key]);
+                        sb.Append('\0');
+                    }
+                }
             }
 
             var hash = MD5.HashData(Utf8.GetBytes(sb.ToString()));

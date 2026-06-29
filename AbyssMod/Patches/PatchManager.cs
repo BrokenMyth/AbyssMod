@@ -1,3 +1,5 @@
+using System;
+using System.Reflection;
 using HarmonyLib;
 
 namespace AbyssMod.Patches;
@@ -16,6 +18,7 @@ public static class PatchManager
     public static void Initialize()
     {
         Harmony.CreateAndPatchAll(typeof(EnhancePatch));
+        Harmony.CreateAndPatchAll(typeof(MasterDataPatch));
         Harmony.CreateAndPatchAll(typeof(TranslationPatch));
 #if DEBUG
         Harmony.CreateAndPatchAll(typeof(DebugPatch));

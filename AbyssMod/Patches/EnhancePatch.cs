@@ -1,9 +1,11 @@
 using System.Linq;
 using Absf;
+using Absf.Api;
 using HarmonyLib;
 using Il2CppSystem.Threading;
 using Project.Notice;
 using Project.Novel;
+using UnityEngine.Networking;
 
 namespace AbyssMod.Patches;
 
@@ -81,5 +83,12 @@ public static class EnhancePatch
         {
             __instance.MovieSkip(ct);
         }
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(UnityWebRequest), nameof(UnityWebRequest.timeout), MethodType.Setter)]
+    public static void ChangeTimeoutLimit(ref int value)
+    {
+        value = 60;
     }
 }

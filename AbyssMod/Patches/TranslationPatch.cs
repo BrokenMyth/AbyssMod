@@ -1,3 +1,4 @@
+using AbyssMod.Services;
 using HarmonyLib;
 using Il2CppSystem;
 using Il2CppSystem.Collections.Generic;
@@ -6,6 +7,9 @@ using Project.Library;
 using Project.MainStory;
 using Project.Novel;
 using Project.Outgame;
+using TMPro;
+using UnityEngine;
+
 
 namespace AbyssMod.Patches;
 
@@ -16,9 +20,85 @@ namespace AbyssMod.Patches;
 public static class TranslationPatch
 {
     private static NovelController _novelController;
+    private static bool _uiTextsLoadRequested;
+    private static bool _uiTextErrorLogged;
+
     private static string NovelId
     {
         get => _novelController?._common?.ScriptId ?? string.Empty;
+    }
+
+    private static string TranslateUiText(TMP_Text text, string value)
+    {
+        if (!Config.Translation.Value || Plugin.Trans == null || value == null)
+            return value;
+
+        if (value.Length == 0)
+            return value;
+
+        var uiTexts = GetUiTextTable();
+        if (uiTexts == null || uiTexts.Count == 0)
+            return value;
+
+        if (IsTranslatedUiText(uiTexts, value))
+            return value;
+
+        if (uiTexts.TryGetValue(value, out string translated) && !string.IsNullOrEmpty(translated))
+            return translated;
+
+        string path = GetTransformPath(text?.transform);
+        if (
+            !string.IsNullOrEmpty(path)
+            && uiTexts.TryGetValue(path, out translated)
+            && !string.IsNullOrEmpty(translated)
+        )
+            return translated;
+
+        return value;
+    }
+
+    private static bool IsTranslatedUiText(
+        System.Collections.Generic.Dictionary<string, string> uiTexts,
+        string value
+    )
+    {
+        foreach (var translation in uiTexts.Values)
+        {
+            if (string.Equals(translation, value, System.StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static System.Collections.Generic.Dictionary<string, string> GetUiTextTable()
+    {
+        if (!_uiTextsLoadRequested)
+        {
+            _uiTextsLoadRequested = true;
+            try
+            {
+                _ = Plugin.Trans.EnsureStaticTranslationsLoadedAsync();
+            }
+            catch (System.Exception e)
+            {
+                Logger.Warn($"UI text translation load request skipped: {e.Message}");
+            }
+        }
+
+        return Plugin.Trans.GetTable(TranslationPaths.UiTexts);
+    }
+
+    private static string GetTransformPath(Transform transform)
+    {
+        if (transform == null)
+            return null;
+
+        var names = new System.Collections.Generic.Stack<string>();
+        for (var current = transform; current != null; current = current.parent)
+            names.Push(current.name);
+
+        return string.Join("/", names);
     }
 
     [HarmonyPrefix]
@@ -56,16 +136,20 @@ public static class TranslationPatch
         if (TryGetCurrentNovel(out var _))
         {
             string title = __result.Item1;
+            var titles = Plugin.Trans.GetTable("titles");
             if (
                 !string.IsNullOrEmpty(title)
-                && Plugin.Trans.Titles.TryGetValue(title, out string tTitle)
+                && titles != null
+                && titles.TryGetValue(title, out string tTitle)
             )
                 __result.Item1 = tTitle;
 
             string description = __result.Item2;
+            var descriptions = Plugin.Trans.GetTable("descriptions");
             if (
                 !string.IsNullOrEmpty(description)
-                && Plugin.Trans.Descriptions.TryGetValue(description, out string tDescription)
+                && descriptions != null
+                && descriptions.TryGetValue(description, out string tDescription)
             )
                 __result.Item2 = tDescription;
         }
@@ -77,9 +161,11 @@ public static class TranslationPatch
     {
         if (TryGetCurrentNovel(out var _))
         {
+            var titles = Plugin.Trans.GetTable("titles");
             if (
                 !string.IsNullOrEmpty(title)
-                && Plugin.Trans.Titles.TryGetValue(title, out string tTitle)
+                && titles != null
+                && titles.TryGetValue(title, out string tTitle)
             )
                 title = tTitle;
         }
@@ -91,9 +177,11 @@ public static class TranslationPatch
     {
         if (TryGetCurrentNovel(out var _))
         {
+            var names = Plugin.Trans.GetTable("names");
             if (
                 !string.IsNullOrEmpty(name)
-                && Plugin.Trans.Names.TryGetValue(name, out string tName)
+                && names != null
+                && names.TryGetValue(name, out string tName)
             )
                 name = tName;
         }
@@ -141,9 +229,11 @@ public static class TranslationPatch
 
             if (TryGetCurrentNovel(out var translation))
             {
+                var names = Plugin.Trans.GetTable("names");
                 if (
                     !string.IsNullOrEmpty(name)
-                    && Plugin.Trans.Names.TryGetValue(name, out string tName)
+                    && names != null
+                    && names.TryGetValue(name, out string tName)
                 )
                     name = tName;
 
@@ -202,43 +292,94 @@ public static class TranslationPatch
         }
     }
 
-    [HarmonyPostfix]
-    [HarmonyPatch(
-        typeof(LibraryNovelPlayPopupController),
-        nameof(LibraryNovelPlayPopupController.InitializePopup)
-    )]
-    public static void SetLibraryPopup(LibraryNovelPlayPopupController __instance, TextPopup popup)
+    // Codex-added TMP UI translation: dynamic assignments pass through set_text.
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(TMP_Text), "set_text")]
+    public static void SetUiText(TMP_Text __instance, ref string value)
     {
-        if (Config.Translation.Value)
+        try
         {
-            string title = __instance._model.Title;
-            if (
-                !string.IsNullOrEmpty(title)
-                && Plugin.Trans.Titles.TryGetValue(title, out string tTitle)
-            )
-                popup._titleText.text = tTitle;
-
-            string description = __instance._model.Description;
-            if (
-                !string.IsNullOrEmpty(description)
-                && Plugin.Trans.Descriptions.TryGetValue(description, out string tDescription)
-            )
-                popup._contentText.text = tDescription;
+            value = TranslateUiText(__instance, value);
+        }
+        catch (System.Exception e)
+        {
+            DisableUiTextTranslationAfterError(e);
         }
     }
 
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(StoryQuestDetailPopup), nameof(StoryQuestDetailPopup.Setup))]
-    public static void SetStoryQuestDetail(StoryQuestDetailPopup __instance)
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(TMP_Text), nameof(TMP_Text.SetText), typeof(string))]
+    public static void SetUiTextBySetText(TMP_Text __instance, ref string sourceText)
     {
-        if (Config.Translation.Value)
+        try
         {
-            string description = __instance._storyDescription.text;
-            if (
-                !string.IsNullOrEmpty(description)
-                && Plugin.Trans.Descriptions.TryGetValue(description, out string tDescription)
-            )
-                __instance._storyDescription.text = tDescription;
+            sourceText = TranslateUiText(__instance, sourceText);
         }
+        catch (System.Exception e)
+        {
+            DisableUiTextTranslationAfterError(e);
+        }
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(TMP_Text), nameof(TMP_Text.SetText), typeof(string), typeof(bool))]
+    public static bool SetUiTextBySetTextSync(
+        TMP_Text __instance,
+        ref string sourceText,
+        bool syncTextInputBox
+    )
+    {
+        try
+        {
+            __instance.text = TranslateUiText(__instance, sourceText);
+        }
+        catch (System.Exception e)
+        {
+            DisableUiTextTranslationAfterError(e);
+        }
+
+        return false;
+    }
+
+    // Codex-added TMP UI translation: prefab/static texts often only exist after OnEnable.
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(TextMeshProUGUI), "OnEnable")]
+    public static void TranslateStaticUiText(TextMeshProUGUI __instance)
+    {
+        TranslateStaticUiText((TMP_Text)__instance);
+    }
+
+    // Codex-added TMP UI translation: covers 3D/world TextMeshPro as well as UGUI.
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(TextMeshPro), "OnEnable")]
+    public static void TranslateStaticUiText(TextMeshPro __instance)
+    {
+        TranslateStaticUiText((TMP_Text)__instance);
+    }
+
+    private static void TranslateStaticUiText(TMP_Text text)
+    {
+        if (text == null)
+            return;
+
+        try
+        {
+            string translated = TranslateUiText(text, text.text);
+            if (!string.Equals(translated, text.text, System.StringComparison.Ordinal))
+                text.text = translated;
+        }
+        catch (System.Exception e)
+        {
+            DisableUiTextTranslationAfterError(e);
+        }
+    }
+
+    private static void DisableUiTextTranslationAfterError(System.Exception e)
+    {
+        if (_uiTextErrorLogged)
+            return;
+
+        _uiTextErrorLogged = true;
+        Logger.Warn($"UI text translation disabled after error: {e.Message}");
     }
 }

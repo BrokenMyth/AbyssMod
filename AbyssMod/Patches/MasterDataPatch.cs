@@ -8,7 +8,7 @@ namespace AbyssMod.Patches;
 
 /// <summary>
 /// 在 masterdata 反序列化后、写入 MasterDataStore 缓存前替换静态文本。
-/// 翻译规则由 master_mapping.json 驱动，新增表无需改本文件。
+/// 翻译规则由 Config/master.json 驱动，新增表无需改本文件。
 /// 剧情正文脚本不在 masterdata 内，仍由 TranslationPatch 处理。
 /// </summary>
 [HarmonyPatch]

@@ -20,7 +20,6 @@
     },
     "m_buff_types": {
       "name": true,
-      "nameEN": true,
       "description": true
     },
     "m_enchantment_details": {
@@ -169,7 +168,8 @@
       "ja": true
     },
     "m_tavern_cards": {
-      "description": true
+      "description": true,
+      "name": true
     },
     "m_tavern_text_color": {
       "word": true,
@@ -231,7 +231,8 @@
       "description": true
     },
     "m_disaster_bosses": {
-      "name": true
+      "name": true,
+      "thumbnail_id": true
     },
     "m_disaster_level_restricts": {
       "description": true
@@ -240,13 +241,16 @@
       "message": true
     },
     "m_dictionary_world_groups": {
-      "title": true
+      "title": true,
+      "initial": true
     },
     "m_dictionary_non_player_character_groups": {
-      "title": true
+      "title": true,
+      "initial": true
     },
     "m_dictionary_enemy_groups": {
-      "title": true
+      "title": true,
+      "initial": true
     },
     "m_dictionary_enemies": {
       "title": true,
@@ -265,7 +269,8 @@
       "parameter_description": true
     },
     "m_defensive_unit_effect_tags": {
-      "description": true
+      "description": true,
+      "icon_id": true
     },
     "m_defend_stages": {
       "name": true
@@ -298,7 +303,9 @@
     "m_payment_appstore_products": {
       "_translation_table": "m_payment_googleplay_products",
       "name": true,
-      "description": true
+      "description": true,
+      "store_product_id": true,
+      "asset_id": true
     },
     "m_payment_dmm_products": {
       "name": true,
@@ -379,7 +386,8 @@
       "description": true
     },
     "m_buildings": {
-      "name": true
+      "name": true,
+      "description": true
     },
     "m_character_abilities": {
       "name": true
@@ -422,6 +430,53 @@
     },
     "m_ability_effect_types": {
       "name": true
+    },
+    "m_visitors": {
+      "title": true,
+      "name": true,
+      "description": true
+    },
+    "m_stage_effects": {
+      "event_buff_asset_id": true
+    },
+    "m_payment_subscriptions": {
+      "name": true,
+      "description": true
+    },
+    "m_payment_sub_categories": {
+      "category_text": true
+    },
+    "m_payment_recommends": {
+      "name": true,
+      "description": true
+    },
+    "m_payment_lineups": {
+      "name": true,
+      "pickup_text": true
+    },
+    "m_payment_gachas": {
+      "name": true,
+      "description": true
+    },
+    "m_novel_main_chapters": {
+      "title": true,
+      "message": true
+    },
+    "m_dungeons": {
+      "name": true
+    },
+    "m_level_synchros": {
+      "asset_id": true
+    },
+    "m_item_obtains": {
+      "options": true
+    },
+    "m_campaigns": {
+      "name": true
+    },
+    "m_allies": {
+      "equipment_abilities": true,
+      "general_abilities": true
     }
   }
 }

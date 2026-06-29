@@ -17,7 +17,7 @@ public static class TranslationPaths
 
     /// <summary>
     /// 需要加载的静态翻译资源类型。
-    /// MasterData 表名来自 master_mapping.json 的 tables，扁平表来自 flat_types。
+    /// MasterData 表名来自 Config/master.json 的 tables，扁平表来自 flat_types。
     /// </summary>
     public static IReadOnlyList<string> ContentTypes { get; set; } = Array.Empty<string>();
 

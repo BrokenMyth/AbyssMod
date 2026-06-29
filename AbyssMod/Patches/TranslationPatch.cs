@@ -301,7 +301,7 @@ public static class TranslationPatch
 
     // Codex-added TMP UI translation: prefab/static texts often only exist after OnEnable.
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(TextMeshProUGUI), "OnEnable")]
+    [HarmonyPatch(typeof(TextMeshProUGUI), nameof(TextMeshProUGUI.OnEnable))]
     public static void TranslateStaticUiText(TextMeshProUGUI __instance)
     {
         TranslateStaticUiText((TMP_Text)__instance);
@@ -309,7 +309,7 @@ public static class TranslationPatch
 
     // Codex-added TMP UI translation: covers 3D/world TextMeshPro as well as UGUI.
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(TextMeshPro), "OnEnable")]
+    [HarmonyPatch(typeof(TextMeshPro), nameof(TextMeshPro.OnEnable))]
     public static void TranslateStaticUiText(TextMeshPro __instance)
     {
         TranslateStaticUiText((TMP_Text)__instance);

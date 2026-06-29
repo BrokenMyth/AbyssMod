@@ -31,7 +31,7 @@ public class TableMapping
 }
 
 /// <summary>
-/// 解析嵌入资源 master_mapping.json，构建「IL2CPP 类名 → TableMapping」索引，
+/// 解析嵌入资源 Config/master.json，构建「IL2CPP 类名 → TableMapping」索引，
 /// 并在加载期解析每个字段的指针与偏移（等价于编译期属性 getter/setter 的内部逻辑）。
 ///
 /// <para>JSON 中 tables 的键直接使用 MasterData/static 的 snake_case 表名。</para>

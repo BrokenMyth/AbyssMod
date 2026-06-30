@@ -3,6 +3,8 @@
     <!-- Per-user path. Override in a gitignored Directory.Build.props at the repo root,
          or pass it on the command line: dotnet build -p:GameDir=... -->
     <GameDir Condition="'$(GameDir)' == ''">E:\Games\DMM GAMES\dotabyss_x_cl</GameDir>
+    <UtilityDll Condition="'$(UtilityDll)' == '' and Exists('..\..\Utility\Utility\bin\Release\net6.0\Utility.dll')">..\..\Utility\Utility\bin\Release\net6.0\Utility.dll</UtilityDll>
+    <UtilityDll Condition="'$(UtilityDll)' == '' and Exists('$(GameDir)\BepInEx\plugins\AbyssMod\Utility.dll')">$(GameDir)\BepInEx\plugins\AbyssMod\Utility.dll</UtilityDll>
     <Authors>Jitsu</Authors>
   </PropertyGroup>
 
@@ -38,8 +40,8 @@
     <Reference Include="@(GameDlls)">
       <Private>false</Private>
     </Reference>
-    <Reference Include="Utility">
-      <HintPath>..\..\Utility\Utility\bin\Release\net6.0\Utility.dll</HintPath>
+    <Reference Include="Utility" Condition="'$(UtilityDll)' != ''">
+      <HintPath>$(UtilityDll)</HintPath>
       <Private>True</Private>
     </Reference>
   </ItemGroup>

@@ -24,8 +24,6 @@ public static class TranslationPatch
     private static NovelController _novelController;
     private static bool _uiTextsLoadRequested;
     private static bool _uiTextErrorLogged;
-    private static bool _novelLogErrorLogged;
-    private static bool _novelLogItemErrorLogged;
     private static HashSet<string> _uiTextValueSet;
 
     private static string NovelId => _novelController?._common?.ScriptId ?? string.Empty;
@@ -263,67 +261,15 @@ public static class TranslationPatch
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(NovelLogPopup), nameof(NovelLogPopup.SetData))]
-    public static void SetLog(ref List<NovelLogData> dataList)
+    public static void SetLog(List<NovelLogData> dataList)
     {
-        if (dataList == null)
-            return;
+        var list = new List<NovelLogData>();
+        bool hasNovel = TryGetCurrentNovel(out var translation);
 
-        try
+        foreach (var data in dataList)
         {
-            var list = new List<NovelLogData>();
-            bool changed = false;
-            bool hasNovel = TryGetCurrentNovel(out var translation);
-
-            foreach (var data in dataList)
-            {
-                if (
-                    TryCreateLogData(
-                        data,
-                        hasNovel,
-                        translation,
-                        out var translatedData,
-                        out bool itemChanged
-                    )
-                )
-                {
-                    list.Add(translatedData);
-                    changed |= itemChanged;
-                }
-                else
-                {
-                    list.Add(data);
-                }
-            }
-
-            if (changed)
-                dataList = list;
-        }
-        catch (System.Exception e)
-        {
-            LogNovelLogErrorOnce(e);
-        }
-    }
-
-    private static bool TryCreateLogData(
-        NovelLogData data,
-        bool hasNovel,
-        StringDictionary translation,
-        out NovelLogData result,
-        out bool changed
-    )
-    {
-        result = data;
-        changed = false;
-
-        if (data == null)
-            return true;
-
-        try
-        {
-            string originalName = data.Name;
-            string originalMessage = data.Message;
-            string name = RestoreUserPlaceholder(originalName);
-            string message = RestoreUserPlaceholder(originalMessage);
+            string name = data.Name?.Replace("%user%", "<user>");
+            string message = data.Message?.Replace("%user%", "<user>");
 
             if (hasNovel)
             {
@@ -331,13 +277,7 @@ public static class TranslationPatch
                 message = TranslateFrom(translation, message);
             }
 
-            changed =
-                !string.Equals(name, originalName, System.StringComparison.Ordinal)
-                || !string.Equals(message, originalMessage, System.StringComparison.Ordinal);
-            if (!changed)
-                return true;
-
-            result = new NovelLogData(
+            list.Add(new NovelLogData(
                 data.ScriptId,
                 data.AssetId,
                 name,
@@ -345,37 +285,11 @@ public static class TranslationPatch
                 data.LogId,
                 data.Voice,
                 data.Ct
-            );
-            return true;
+            ));
         }
-        catch (System.Exception e)
-        {
-            LogNovelLogItemErrorOnce(e);
-            result = data;
-            changed = false;
-            return false;
-        }
-    }
 
-    private static string RestoreUserPlaceholder(string value) =>
-        value?.Replace("%user%", "<user>");
-
-    private static void LogNovelLogErrorOnce(System.Exception e)
-    {
-        if (_novelLogErrorLogged)
-            return;
-        _novelLogErrorLogged = true;
-        Logger.Warn($"Novel log translation skipped; original log data will be used: {e.Message}");
-    }
-
-    private static void LogNovelLogItemErrorOnce(System.Exception e)
-    {
-        if (_novelLogItemErrorLogged)
-            return;
-        _novelLogItemErrorLogged = true;
-        Logger.Warn(
-            $"Novel log entry translation skipped; further entry errors suppressed: {e.Message}"
-        );
+        dataList.Clear();
+        dataList.AddRange(list);
     }
 
     [HarmonyPrefix]
